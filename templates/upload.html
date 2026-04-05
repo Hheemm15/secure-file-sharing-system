@@ -1,18 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Upload</title>
+    <title>Upload File</title>
 </head>
 <body>
 
 <h2>Upload File</h2>
 
+<!-- Flash messages -->
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    {% for msg in messages %}
+      <p style="color: green;">{{ msg }}</p>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
 <form method="POST" enctype="multipart/form-data">
-    <input type="file" name="file"><br><br>
+    <input type="file" name="file">
     <button type="submit">Upload</button>
 </form>
 
-<a href="/login">Back to Login</a>
+<br>
+
+<a href="/logout">Logout</a>
 
 </body>
 </html>

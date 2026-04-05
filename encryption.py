@@ -1,7 +1,10 @@
 from cryptography.fernet import Fernet
+from dotenv import load_dotenv
+import os
 
-key = b'J12CIlFHNTh2cJwQ3Og6Ou-f4sAC0QGhekYRsp3KRv4='
+load_dotenv()
 
+key = os.getenv("SECRET_KEY").encode()
 cipher = Fernet(key)
 
 def encrypt_file(data):

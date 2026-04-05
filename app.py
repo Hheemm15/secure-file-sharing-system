@@ -1,17 +1,18 @@
-from flask import Flask, render_template, request, redirect, send_file
+from flask import Flask, render_template, request, redirect, send_file, session, flash
 from auth import register_user, login_user
 from encryption import encrypt_file, decrypt_file
 import os
 
 app = Flask(__name__)
+app.secret_key = 'supersecret123'
 
-# Home route
+# ================= HOME =================
 @app.route('/')
 def home():
     return redirect('/login')
 
 
-# Register route
+# ================= REGISTER =================
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -21,14 +22,16 @@ def register():
         success = register_user(username, password)
 
         if success:
-            return "Registered Successfully!"
+            flash("Registered successfully! Please login.")
+            return redirect('/login')
         else:
-            return "User already exists!"
+            flash("User already exists!")
+            return redirect('/register')
 
     return render_template('register.html')
 
 
-# Login route
+# ================= LOGIN =================
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -38,44 +41,66 @@ def login():
         user = login_user(username, password)
 
         if user:
-            return "Login Successful!"
+            session['user'] = username
+            return redirect('/upload')
         else:
-            return "Invalid Credentials!"
+            flash("Invalid credentials!")
+            return redirect('/login')
 
     return render_template('login.html')
 
 
-# Upload route
+# ================= LOGOUT =================
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    flash("Logged out!")
+    return redirect('/login')
+
+
+# ================= UPLOAD =================
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
+    if 'user' not in session:
+        return redirect('/login')
+
     if request.method == 'POST':
+        if 'file' not in request.files:
+            flash("No file selected!")
+            return redirect('/upload')
+
         file = request.files['file']
 
-        if file:
-            data = file.read()
+        if file.filename == '':
+            flash("No file chosen!")
+            return redirect('/upload')
 
-            encrypted_data = encrypt_file(data)
+        data = file.read()
+        encrypted_data = encrypt_file(data)
 
-            filepath = os.path.join('uploads', file.filename)
+        filepath = os.path.join('uploads', file.filename)
 
-            with open(filepath, 'wb') as f:
-                f.write(encrypted_data)
+        with open(filepath, 'wb') as f:
+            f.write(encrypted_data)
 
-            return "File uploaded & encrypted!"
+        flash("File uploaded successfully!")
+        return redirect('/upload')
 
-    return render_template('upload.html')
+    # ✅ SHOW FILE LIST
+    files = os.listdir('uploads')
+    return render_template('upload.html', files=files)
 
 
-# Download route (MOVE ABOVE app.run)
+# ================= DOWNLOAD =================
 @app.route('/download/<path:filename>')
 def download(filename):
-    print("Requested file:", filename)
+    if 'user' not in session:
+        return redirect('/login')
 
     filepath = os.path.join('uploads', filename)
-    print("Looking in:", filepath)
 
     if not os.path.exists(filepath):
-        return f"File NOT FOUND: {filepath}"
+        return "File not found!"
 
     with open(filepath, 'rb') as f:
         encrypted_data = f.read()
@@ -90,6 +115,6 @@ def download(filename):
     return send_file(temp_path, as_attachment=True)
 
 
-# Run app (ALWAYS LAST)
+# ================= RUN =================
 if __name__ == '__main__':
     app.run(debug=True)
