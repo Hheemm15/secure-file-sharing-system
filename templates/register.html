@@ -2,26 +2,79 @@
 <html>
 <head>
     <title>Register</title>
+
+    <style>
+        body {
+            background-color: #3f568f;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 300px;
+            margin: 120px auto;
+            text-align: center;
+            color: white;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        a {
+            color: white;
+            text-decoration: underline;
+            display: block;
+            margin-top: 10px;
+        }
+
+        .flash {
+            color: yellow;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
+
 <body>
 
-<h2>Register</h2>
+<div class="container">
+    <h2>Register</h2>
 
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    {% for msg in messages %}
-      <p style="color: red;">{{ msg }}</p>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for msg in messages %}
+          <p class="flash">{{ msg }}</p>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
-<form method="POST">
-    <input type="text" name="username" placeholder="Username"><br><br>
-    <input type="password" name="password" placeholder="Password"><br><br>
-    <button type="submit">Register</button>
-</form>
+    <form method="POST">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
 
-<a href="/login">Go to Login</a>
+        <button type="submit">Register</button>
+    </form>
+
+    <a href="/login">Login</a>
+</div>
 
 </body>
 </html>

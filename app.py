@@ -2,9 +2,17 @@ from flask import Flask, render_template, request, redirect, send_file, session,
 from auth import register_user, login_user
 from encryption import encrypt_file, decrypt_file
 import os
+import time
 
 app = Flask(__name__)
 app.secret_key = 'supersecret123'
+
+UPLOAD_FOLDER = 'uploads'
+
+# Ensure uploads folder exists
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
 
 # ================= HOME =================
 @app.route('/')
@@ -64,6 +72,12 @@ def upload():
     if 'user' not in session:
         return redirect('/login')
 
+    user = session['user']
+    user_folder = os.path.join(UPLOAD_FOLDER, user)
+
+    if not os.path.exists(user_folder):
+        os.makedirs(user_folder)
+
     if request.method == 'POST':
         if 'file' not in request.files:
             flash("No file selected!")
@@ -75,29 +89,48 @@ def upload():
             flash("No file chosen!")
             return redirect('/upload')
 
-        data = file.read()
-        encrypted_data = encrypt_file(data)
+        filepath = os.path.join(user_folder, file.filename)
 
-        filepath = os.path.join('uploads', file.filename)
+        data = file.read()
+
+        # Detect encrypted file
+        try:
+            decrypt_file(data)
+            encrypted_data = data
+            flash("Encrypted file uploaded!")
+        except:
+            encrypted_data = encrypt_file(data)
+            flash("File uploaded & encrypted!")
 
         with open(filepath, 'wb') as f:
             f.write(encrypted_data)
 
-        flash("File uploaded successfully!")
         return redirect('/upload')
 
-    # ✅ SHOW FILE LIST
-    files = os.listdir('uploads')
+    # ================= FILE LIST =================
+    files = []
+
+    if os.path.exists(user_folder):
+        for filename in os.listdir(user_folder):
+            filepath = os.path.join(user_folder, filename)
+
+            files.append({
+                "name": filename,
+                "size": round(os.path.getsize(filepath)/1024, 2),
+                "time": time.ctime(os.path.getmtime(filepath))
+            })
+
     return render_template('upload.html', files=files)
 
 
-# ================= DOWNLOAD =================
+# ================= DOWNLOAD (DECRYPTED) =================
 @app.route('/download/<path:filename>')
 def download(filename):
     if 'user' not in session:
         return redirect('/login')
 
-    filepath = os.path.join('uploads', filename)
+    user = session['user']
+    filepath = os.path.join(UPLOAD_FOLDER, user, filename)
 
     if not os.path.exists(filepath):
         return "File not found!"
@@ -113,6 +146,36 @@ def download(filename):
         f.write(decrypted_data)
 
     return send_file(temp_path, as_attachment=True)
+
+
+# ================= DOWNLOAD ENCRYPTED =================
+@app.route('/download_encrypted/<path:filename>')
+def download_encrypted(filename):
+    if 'user' not in session:
+        return redirect('/login')
+
+    user = session['user']
+    filepath = os.path.join(UPLOAD_FOLDER, user, filename)
+
+    return send_file(filepath, as_attachment=True)
+
+
+# ================= DELETE =================
+@app.route('/delete/<path:filename>')
+def delete(filename):
+    if 'user' not in session:
+        return redirect('/login')
+
+    user = session['user']
+    filepath = os.path.join(UPLOAD_FOLDER, user, filename)
+
+    if os.path.exists(filepath):
+        os.remove(filepath)
+        flash("File deleted successfully!")
+    else:
+        flash("File not found!")
+
+    return redirect('/upload')
 
 
 # ================= RUN =================
