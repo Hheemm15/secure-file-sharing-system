@@ -1,107 +1,69 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Secure File Sharing</title>
+    <title>Dashboard</title>
 
     <style>
         body {
+            background: linear-gradient(to right, #2c3e50, #4b6cb7);
+            font-family: Arial;
             margin: 0;
-            font-family: 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            color: white;
         }
 
-        .navbar {
-            background: rgba(0,0,0,0.3);
+        .nav {
+            background: #1e2a47;
+            color: white;
             padding: 15px;
             text-align: right;
         }
 
-        .navbar a {
+        .nav a {
             color: white;
             margin-left: 20px;
             text-decoration: none;
-            font-weight: bold;
         }
 
         .container {
-            width: 700px;
-            margin: 40px auto;
+            width: 600px;
+            margin: 50px auto;
             background: white;
-            color: black;
             padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border-radius: 10px;
         }
 
         h2 {
             text-align: center;
         }
 
-        .upload-box {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        input[type="file"] {
-            margin: 10px 0;
+        input {
+            padding: 10px;
         }
 
         button {
-            padding: 10px 20px;
-            background: #2a5298;
+            padding: 10px;
+            background: #2c3e50;
             color: white;
             border: none;
-            border-radius: 6px;
             cursor: pointer;
         }
 
-        button:hover {
-            background: #1e3c72;
+        .file-box {
+            background: #f2f2f2;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
         }
 
-        .message {
-            text-align: center;
-            color: green;
-        }
-
-        .file-list {
-            margin-top: 20px;
-        }
-
-        .file-item {
-            background: #f4f6f9;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .file-info {
-            font-size: 13px;
-            color: gray;
-        }
-
-        .actions a {
-            margin-left: 10px;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .download {
-            color: green;
-        }
-
-        .delete {
-            color: red;
+        .actions a, .actions button {
+            margin-right: 10px;
+            font-size: 14px;
         }
     </style>
 </head>
 
 <body>
 
-<div class="navbar">
+<div class="nav">
     <a href="/upload">Dashboard</a>
     <a href="/logout">Logout</a>
 </div>
@@ -112,43 +74,47 @@
 
     <!-- Flash -->
     {% with messages = get_flashed_messages() %}
-      {% for msg in messages %}
-        <p class="message">{{ msg }}</p>
-      {% endfor %}
+    {% if messages %}
+        {% for msg in messages %}
+            <p style="color: green;">{{ msg }}</p>
+        {% endfor %}
+    {% endif %}
     {% endwith %}
 
     <!-- Upload -->
-    <div class="upload-box">
-        <form method="POST" enctype="multipart/form-data">
-            <input type="file" name="file">
-            <br>
-            <button type="submit">Upload Securely</button>
-        </form>
-    </div>
+    <form method="POST" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <button type="submit">Upload Securely</button>
+    </form>
 
-    <!-- Files -->
-    <div class="file-list">
-        <h3>Your Files</h3>
+    <h3>Your Files</h3>
 
-        {% for file in files %}
-        <div class="file-item">
-            <div>
-                <strong>{{ file.name }}</strong>
-                <div class="file-info">
-                    {{ file.size }} KB | {{ file.time }}
-                </div>
-            </div>
+    {% for file in files %}
+    <div class="file-box">
+        <b>{{ file.original }}</b><br>
+        {{ file.size }} KB | {{ file.time }}
 
-            <div class="actions">
-                <a href="/download/{{ file.name }}">Download</a>
-                <a href="/download_encrypted/{{ file.name }}">Encrypted</a>
-                <a href="/delete/{{ file.name }}">Delete</a>
-            </div>
+        <div class="actions">
+            <a href="/download/{{ file.name }}">Download</a>
+            <a href="/download_encrypted/{{ file.name }}">Encrypted</a>
+            <a href="/delete/{{ file.name }}">Delete</a>
+
+            <!-- 🔗 SHARE BUTTON -->
+            <button onclick="copyLink('{{ request.host_url }}share/{{ file.file_id }}')">
+                Share
+            </button>
         </div>
-        {% endfor %}
     </div>
+    {% endfor %}
 
 </div>
+
+<script>
+function copyLink(link) {
+    navigator.clipboard.writeText(link);
+    alert("Link copied: " + link);
+}
+</script>
 
 </body>
 </html>

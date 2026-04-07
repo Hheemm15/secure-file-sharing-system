@@ -1,26 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Login</title>
-<style>
-body { font-family: Arial; background: #2a5298; color: white; text-align:center; }
-.container { margin-top:100px; }
-input { padding:10px; margin:10px; }
-button { padding:10px; }
-</style>
+    <title>Login</title>
+    <style>
+        body {
+            background: #3f568f;
+            font-family: Arial;
+        }
+        .container {
+            width: 300px;
+            margin: 120px auto;
+            text-align: center;
+            color: white;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+        }
+        button {
+            padding: 10px;
+            width: 100%;
+            background: white;
+            border: none;
+            cursor: pointer;
+        }
+        a {
+            color: white;
+        }
+    </style>
 </head>
-
 <body>
+
 <div class="container">
-<h2>Login</h2>
+    <h2>Login</h2>
 
-<form method="POST">
-<input type="text" name="username" placeholder="Username"><br>
-<input type="password" name="password" placeholder="Password"><br>
-<button type="submit">Login</button>
-</form>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for msg in messages %}
+            <p>{{ msg }}</p>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
 
-<a href="/register" style="color:white;">Register</a>
+    <form method="POST">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+
+    <a href="/register">Register</a>
 </div>
+
 </body>
 </html>
