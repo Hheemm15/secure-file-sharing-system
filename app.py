@@ -51,6 +51,9 @@ def login():
 
         if user:
             session['user'] = username
+            if 'pending_file' in session:
+                file_id = session.pop('pending_file')
+                return redirect(f'/secure-share/{file_id}')
             return redirect('/upload')
         else:
             flash("Invalid credentials!")
@@ -67,7 +70,6 @@ def logout():
     return redirect('/login')
 
 
-# ================= UPLOAD =================
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
     if 'user' not in session:
@@ -79,6 +81,7 @@ def upload():
     if not os.path.exists(user_folder):
         os.makedirs(user_folder)
 
+    # ================= UPLOAD =================
     if request.method == 'POST':
         if 'file' not in request.files:
             flash("No file selected!")
@@ -92,7 +95,6 @@ def upload():
 
         data = file.read()
 
-        # Encrypt if not already encrypted
         try:
             decrypt_file(data)
             encrypted_data = data
@@ -107,28 +109,30 @@ def upload():
         with open(filepath, 'wb') as f:
             f.write(encrypted_data)
 
-        # Save in DB
         cursor.execute(
             "INSERT INTO files (filename, owner, filepath, file_id) VALUES (%s, %s, %s, %s)",
             (filename, user, filepath, file_id)
         )
         conn.commit()
 
-        share_link = request.host_url + "share/" + file_id
-        flash(f"File uploaded! Share link copied below.")
-
+        flash("File uploaded successfully!")
         return redirect('/upload')
 
     # ================= FILE LIST =================
-    cursor.execute(
-        "SELECT filename, filepath, created_at, file_id FROM files WHERE owner=%s",
-        (user,)
-    )
+    cursor.execute("""
+        SELECT filename, filepath, created_at, file_id, owner
+        FROM files
+        WHERE owner=%s
+        OR file_id IN (
+            SELECT file_id FROM file_access WHERE username=%s
+        )
+    """, (user, user))
+
     results = cursor.fetchall()
 
     files = []
     for row in results:
-        filename, filepath, created_at, file_id = row
+        filename, filepath, created_at, file_id, owner = row
 
         if os.path.exists(filepath):
             files.append({
@@ -136,7 +140,8 @@ def upload():
                 "original": filename,
                 "size": round(os.path.getsize(filepath)/1024, 2),
                 "time": created_at,
-                "file_id": file_id
+                "file_id": file_id,
+                "owner": "You" if owner == user else "Shared"
             })
 
     return render_template('upload.html', files=files)
@@ -150,6 +155,19 @@ def download(filename):
 
     user = session['user']
     filepath = os.path.join(UPLOAD_FOLDER, user, filename)
+
+    # check access
+    cursor.execute("""
+        SELECT * FROM files 
+        WHERE filepath=%s AND (
+            owner=%s OR file_id IN (
+                SELECT file_id FROM file_access WHERE username=%s
+            )
+        )
+    """, (filepath, user, user))
+
+    if not cursor.fetchone():
+        return "Access denied!"
 
     with open(filepath, 'rb') as f:
         encrypted_data = f.read()
@@ -222,6 +240,83 @@ def delete(filename):
 
     return redirect('/upload')
 
+# ================= SECURE SHARE =================
+@app.route('/secure-share/<file_id>')
+def secure_share(file_id):
+    if 'user' not in session:
+        session['pending_file'] = file_id
+        return redirect('/login')
+
+    current_user = session['user']
+
+    # Check if file exists
+    cursor.execute(
+        "SELECT filename, filepath FROM files WHERE file_id=%s",
+        (file_id,)
+    )
+    result = cursor.fetchone()
+
+    if not result:
+        return "Invalid link!"
+
+    filename, filepath = result
+
+    #  GIVE ACCESS (instead of copying)
+    cursor.execute(
+        "SELECT * FROM file_access WHERE file_id=%s AND username=%s",
+        (file_id, current_user)
+    )
+
+    if not cursor.fetchone():
+        cursor.execute(
+            "INSERT INTO file_access (file_id, username) VALUES (%s, %s)",
+            (file_id, current_user)
+        )
+        conn.commit()
+
+    # Download file
+    with open(filepath, 'rb') as f:
+        encrypted_data = f.read()
+
+    decrypted_data = decrypt_file(encrypted_data)
+
+    temp_path = "shared_" + filename
+
+    with open(temp_path, 'wb') as f:
+        f.write(decrypted_data)
+
+    return send_file(temp_path, as_attachment=True)
+
+# ================= SHARE WITH USER =================
+@app.route('/share_user', methods=['POST'])
+def share_user():
+    if 'user' not in session:
+        return redirect('/login')
+
+    file_id = request.form['file_id']
+    target_user = request.form['username']
+
+    # check if user exists
+    cursor.execute("SELECT * FROM users WHERE username=%s", (target_user,))
+    if not cursor.fetchone():
+        flash("User does not exist!")
+        return redirect('/upload')
+
+    # prevent duplicate access
+    cursor.execute(
+        "SELECT * FROM file_access WHERE file_id=%s AND username=%s",
+        (file_id, target_user)
+    )
+
+    if not cursor.fetchone():
+        cursor.execute(
+            "INSERT INTO file_access (file_id, username) VALUES (%s, %s)",
+            (file_id, target_user)
+        )
+        conn.commit()
+
+    flash(f"File shared with {target_user}!")
+    return redirect('/upload')
 
 # ================= RUN =================
 if __name__ == '__main__':

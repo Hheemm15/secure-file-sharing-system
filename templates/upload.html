@@ -108,22 +108,30 @@
     <h3>Your Files</h3>
 
     {% for file in files %}
-    <div class="file-card">
-        <b>{{ file.original }}</b><br>
-        <small>{{ file.size }} KB | {{ file.time }}</small>
+<div class="file-card">
 
-        <div class="file-actions">
-            <a class="download" href="/download/{{ file.name }}">Download</a>
-            <a class="encrypted" href="/download_encrypted/{{ file.name }}">Encrypted</a>
-            <a class="delete" href="/delete/{{ file.name }}">Delete</a>
+    <b>{{ file.original }}</b><br>
+    {{ file.size }} KB | {{ file.time }}  
+    <span>({{ file.owner }})</span>
 
-            <button class="share-btn"
-                onclick="copyLink('{{ request.host_url }}share/{{ file.file_id }}')">
-                Share
-            </button>
-        </div>
+    <div class="file-actions">
+        <a href="/download/{{ file.name }}">Download</a>
+        <a href="/download_encrypted/{{ file.name }}">Encrypted</a>
+        <a href="/delete/{{ file.name }}">Delete</a>
+
+        <!-- 🔐 SHARE WITH USER -->
+        <form method="POST" action="/share_user" style="margin-top:10px;">
+            <input type="hidden" name="file_id" value="{{ file.file_id }}">
+            
+            <input type="text" name="username" placeholder="Enter username" required>
+            
+            <button type="submit">Share</button>
+        </form>
+
     </div>
-    {% endfor %}
+
+</div>
+{% endfor %}
 
 </div>
 
