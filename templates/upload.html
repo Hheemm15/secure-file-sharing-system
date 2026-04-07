@@ -5,102 +5,120 @@
 
     <style>
         body {
-            background: linear-gradient(to right, #2c3e50, #4b6cb7);
-            font-family: Arial;
             margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            color: #333;
         }
 
-        .nav {
-            background: #1e2a47;
+        .navbar {
+            background: #0f172a;
             color: white;
             padding: 15px;
-            text-align: right;
+            display: flex;
+            justify-content: space-between;
         }
 
-        .nav a {
+        .navbar a {
             color: white;
-            margin-left: 20px;
             text-decoration: none;
+            margin-left: 20px;
         }
 
         .container {
-            width: 600px;
+            width: 60%;
             margin: 50px auto;
             background: white;
             padding: 30px;
-            border-radius: 10px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
 
         h2 {
             text-align: center;
         }
 
-        input {
-            padding: 10px;
+        .upload-box {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        input[type="file"] {
+            margin-right: 10px;
         }
 
         button {
-            padding: 10px;
-            background: #2c3e50;
-            color: white;
+            padding: 8px 15px;
             border: none;
+            border-radius: 6px;
             cursor: pointer;
         }
 
-        .file-box {
-            background: #f2f2f2;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
+        .upload-btn {
+            background: #2563eb;
+            color: white;
         }
 
-        .actions a, .actions button {
-            margin-right: 10px;
-            font-size: 14px;
+        .download { color: green; }
+        .encrypted { color: orange; }
+        .delete { color: red; }
+        .share-btn {
+            background: #1e293b;
+            color: white;
+            margin-left: 10px;
         }
+
+        .file-card {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .file-actions a {
+            margin-right: 10px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
     </style>
 </head>
 
 <body>
 
-<div class="nav">
-    <a href="/upload">Dashboard</a>
-    <a href="/logout">Logout</a>
+<div class="navbar">
+    <div>🔐 Secure File Sharing</div>
+    <div>
+        <a href="/upload">Dashboard</a>
+        <a href="/logout">Logout</a>
+    </div>
 </div>
 
 <div class="container">
 
-    <h2>🔐 Secure File Sharing System</h2>
+    <h2>📁 Upload File</h2>
 
-    <!-- Flash -->
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-        {% for msg in messages %}
-            <p style="color: green;">{{ msg }}</p>
-        {% endfor %}
-    {% endif %}
-    {% endwith %}
-
-    <!-- Upload -->
-    <form method="POST" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <button type="submit">Upload Securely</button>
-    </form>
+    <div class="upload-box">
+        <form method="POST" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <button class="upload-btn">Upload Securely</button>
+        </form>
+    </div>
 
     <h3>Your Files</h3>
 
     {% for file in files %}
-    <div class="file-box">
+    <div class="file-card">
         <b>{{ file.original }}</b><br>
-        {{ file.size }} KB | {{ file.time }}
+        <small>{{ file.size }} KB | {{ file.time }}</small>
 
-        <div class="actions">
-            <a href="/download/{{ file.name }}">Download</a>
-            <a href="/download_encrypted/{{ file.name }}">Encrypted</a>
-            <a href="/delete/{{ file.name }}">Delete</a>
+        <div class="file-actions">
+            <a class="download" href="/download/{{ file.name }}">Download</a>
+            <a class="encrypted" href="/download_encrypted/{{ file.name }}">Encrypted</a>
+            <a class="delete" href="/delete/{{ file.name }}">Delete</a>
 
-            <!-- 🔗 SHARE BUTTON -->
-            <button onclick="copyLink('{{ request.host_url }}share/{{ file.file_id }}')">
+            <button class="share-btn"
+                onclick="copyLink('{{ request.host_url }}share/{{ file.file_id }}')">
                 Share
             </button>
         </div>
@@ -111,8 +129,18 @@
 
 <script>
 function copyLink(link) {
-    navigator.clipboard.writeText(link);
-    alert("Link copied: " + link);
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(link);
+    } else {
+        const temp = document.createElement("input");
+        temp.value = link;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand("copy");
+        document.body.removeChild(temp);
+    }
+
+    alert("Link copied:\n" + link);
 }
 </script>
 

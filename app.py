@@ -7,11 +7,10 @@ import time
 import uuid
 
 app = Flask(__name__)
-app.secret_key = 'supersecret123'
+app.secret_key = 'k2oqzkfP8rFriQmJbb079iQ9mApYPJApuyhmkAR4PAk='
 
 UPLOAD_FOLDER = 'uploads'
 
-# Ensure uploads folder exists
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -97,12 +96,9 @@ def upload():
         try:
             decrypt_file(data)
             encrypted_data = data
-            flash("Encrypted file uploaded!")
         except:
             encrypted_data = encrypt_file(data)
-            flash("File uploaded & encrypted!")
 
-        # Generate unique ID
         file_id = str(uuid.uuid4())
         filename = file.filename
 
@@ -111,31 +107,26 @@ def upload():
         with open(filepath, 'wb') as f:
             f.write(encrypted_data)
 
-        # ✅ SAVE file_id separately (IMPORTANT FIX)
+        # Save in DB
         cursor.execute(
             "INSERT INTO files (filename, owner, filepath, file_id) VALUES (%s, %s, %s, %s)",
             (filename, user, filepath, file_id)
         )
         conn.commit()
 
-        # ✅ AUTO-DETECT HOST (FIXED BUG)
-        host = request.host_url
-        share_link = f"{host}share/{file_id}"
-
-        flash(f"File uploaded! Share link: {share_link}")
+        share_link = request.host_url + "share/" + file_id
+        flash(f"File uploaded! Share link copied below.")
 
         return redirect('/upload')
 
     # ================= FILE LIST =================
-    files = []
-
     cursor.execute(
         "SELECT filename, filepath, created_at, file_id FROM files WHERE owner=%s",
         (user,)
     )
-
     results = cursor.fetchall()
 
+    files = []
     for row in results:
         filename, filepath, created_at, file_id = row
 
@@ -151,7 +142,7 @@ def upload():
     return render_template('upload.html', files=files)
 
 
-# ================= DOWNLOAD (DECRYPTED) =================
+# ================= DOWNLOAD =================
 @app.route('/download/<path:filename>')
 def download(filename):
     if 'user' not in session:
@@ -159,9 +150,6 @@ def download(filename):
 
     user = session['user']
     filepath = os.path.join(UPLOAD_FOLDER, user, filename)
-
-    if not os.path.exists(filepath):
-        return "File not found!"
 
     with open(filepath, 'rb') as f:
         encrypted_data = f.read()
@@ -188,14 +176,13 @@ def download_encrypted(filename):
     return send_file(filepath, as_attachment=True)
 
 
-# ================= SHARE LINK =================
+# ================= SHARE =================
 @app.route('/share/<file_id>')
 def share(file_id):
     cursor.execute(
         "SELECT filename, filepath FROM files WHERE file_id=%s",
         (file_id,)
     )
-
     result = cursor.fetchone()
 
     if not result:
@@ -232,8 +219,6 @@ def delete(filename):
         conn.commit()
 
         flash("File deleted successfully!")
-    else:
-        flash("File not found!")
 
     return redirect('/upload')
 
