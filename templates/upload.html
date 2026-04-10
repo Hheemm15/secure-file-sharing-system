@@ -11,11 +11,10 @@
             color: #333;
         }
 
-        /* Sidebar */
         .sidebar {
             width: 220px;
             height: 100vh;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0, 0, 0, 0.6);
             position: fixed;
             padding: 20px;
             color: white;
@@ -32,15 +31,13 @@
             margin: 20px 0;
         }
 
-        /* Main */
         .main {
             margin-left: 240px;
             padding: 30px;
         }
 
-        /* Glass card */
         .card {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             padding: 20px;
             border-radius: 12px;
@@ -48,7 +45,6 @@
             color: white;
         }
 
-        /* Upload box */
         .upload-box {
             text-align: center;
         }
@@ -66,9 +62,8 @@
             color: white;
         }
 
-        /* File cards */
         .file-card {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             padding: 15px;
             border-radius: 10px;
             margin-top: 10px;
@@ -93,24 +88,28 @@
             padding: 3px 6px;
             border-radius: 5px;
         }
-
     </style>
 </head>
 
 <body>
 
-<!-- Sidebar -->
 <div class="sidebar">
-    <h2>🔐 SecureShare</h2>
-    <a href="/upload">📁 Dashboard</a>
-    <a href="/logout">🚪 Logout</a>
+    <h2>SecureShare</h2>
+    <a href="/upload">Dashboard</a>
+    <a href="/logout">Logout</a>
 </div>
 
-<!-- Main -->
 <div class="main">
-
     <div class="card upload-box">
         <h2>Upload File</h2>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for msg in messages %}
+                <p>{{ msg }}</p>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
 
         <form method="POST" enctype="multipart/form-data">
             <input type="file" name="file" required>
@@ -129,27 +128,23 @@
             <small>{{ file.size }} KB | {{ file.time }}</small>
 
             <div class="actions">
-                <a href="/download/{{ file.name }}">⬇ Download</a>
-                <a href="/download_encrypted/{{ file.name }}">🔐 Encrypted</a>
-                <a href="/delete/{{ file.name }}">🗑 Delete</a>
+                <a href="/download/{{ file.file_id }}">Download</a>
+                <a href="/download_encrypted/{{ file.file_id }}">Encrypted</a>
+                <a href="/delete/{{ file.file_id }}">Delete</a>
 
-                <button onclick="copyLink('{{ request.host_url }}share/{{ file.file_id }}')">
-                    🔗 Share
+                <button onclick="copyLink('{{ request.host_url }}secure-share/{{ file.file_id }}')">
+                    Share
                 </button>
             </div>
 
-            <!-- Share with user -->
             <form method="POST" action="/share_user" style="margin-top:10px;">
                 <input type="hidden" name="file_id" value="{{ file.file_id }}">
                 <input type="text" name="username" placeholder="Share with username" required>
-                <button type="submit">👤 Share</button>
+                <button type="submit">Share</button>
             </form>
-
         </div>
         {% endfor %}
-
     </div>
-
 </div>
 
 <script>
