@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual env
+venv/
+
+# OS files
+.DS_Store
+
+# Database
+*.db
+
+# Environment variables
+.env
+
+# Uploads 
+uploads/
+
+# Temp files
+temp_*
+shared_*

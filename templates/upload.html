@@ -6,45 +6,55 @@
     <style>
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(to right, #1e3c72, #2a5298);
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
             color: #333;
         }
 
-        .navbar {
-            background: #0f172a;
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            height: 100vh;
+            background: rgba(0,0,0,0.6);
+            position: fixed;
+            padding: 20px;
             color: white;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
         }
 
-        .navbar a {
+        .sidebar h2 {
+            text-align: center;
+        }
+
+        .sidebar a {
+            display: block;
             color: white;
             text-decoration: none;
-            margin-left: 20px;
+            margin: 20px 0;
         }
 
-        .container {
-            width: 60%;
-            margin: 50px auto;
-            background: white;
+        /* Main */
+        .main {
+            margin-left: 240px;
             padding: 30px;
+        }
+
+        /* Glass card */
+        .card {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            color: white;
         }
 
-        h2 {
-            text-align: center;
-        }
-
+        /* Upload box */
         .upload-box {
             text-align: center;
-            margin-bottom: 30px;
         }
 
         input[type="file"] {
-            margin-right: 10px;
+            margin: 10px;
         }
 
         button {
@@ -52,33 +62,36 @@
             border: none;
             border-radius: 6px;
             cursor: pointer;
-        }
-
-        .upload-btn {
-            background: #2563eb;
+            background: #0f172a;
             color: white;
         }
 
-        .download { color: green; }
-        .encrypted { color: orange; }
-        .delete { color: red; }
-        .share-btn {
-            background: #1e293b;
-            color: white;
-            margin-left: 10px;
-        }
-
+        /* File cards */
         .file-card {
-            background: #f1f5f9;
+            background: rgba(255,255,255,0.2);
             padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
+            border-radius: 10px;
+            margin-top: 10px;
         }
 
-        .file-actions a {
+        .actions a, .actions button {
             margin-right: 10px;
+            font-size: 14px;
+            color: white;
             text-decoration: none;
-            font-weight: bold;
+        }
+
+        input[type="text"] {
+            padding: 5px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        .tag {
+            font-size: 12px;
+            background: #0f172a;
+            padding: 3px 6px;
+            border-radius: 5px;
         }
 
     </style>
@@ -86,67 +99,67 @@
 
 <body>
 
-<div class="navbar">
-    <div>🔐 Secure File Sharing</div>
-    <div>
-        <a href="/upload">Dashboard</a>
-        <a href="/logout">Logout</a>
-    </div>
+<!-- Sidebar -->
+<div class="sidebar">
+    <h2>🔐 SecureShare</h2>
+    <a href="/upload">📁 Dashboard</a>
+    <a href="/logout">🚪 Logout</a>
 </div>
 
-<div class="container">
+<!-- Main -->
+<div class="main">
 
-    <h2>📁 Upload File</h2>
+    <div class="card upload-box">
+        <h2>Upload File</h2>
 
-    <div class="upload-box">
         <form method="POST" enctype="multipart/form-data">
             <input type="file" name="file" required>
-            <button class="upload-btn">Upload Securely</button>
+            <button type="submit">Upload Securely</button>
         </form>
     </div>
 
-    <h3>Your Files</h3>
+    <div class="card">
+        <h3>Your Files</h3>
 
-    {% for file in files %}
-<div class="file-card">
+        {% for file in files %}
+        <div class="file-card">
+            <b>{{ file.original }}</b>
+            <span class="tag">{{ file.owner }}</span><br>
 
-    <b>{{ file.original }}</b><br>
-    {{ file.size }} KB | {{ file.time }}  
-    <span>({{ file.owner }})</span>
+            <small>{{ file.size }} KB | {{ file.time }}</small>
 
-    <div class="file-actions">
-        <a href="/download/{{ file.name }}">Download</a>
-        <a href="/download_encrypted/{{ file.name }}">Encrypted</a>
-        <a href="/delete/{{ file.name }}">Delete</a>
+            <div class="actions">
+                <a href="/download/{{ file.name }}">⬇ Download</a>
+                <a href="/download_encrypted/{{ file.name }}">🔐 Encrypted</a>
+                <a href="/delete/{{ file.name }}">🗑 Delete</a>
 
-        <!-- 🔐 SHARE WITH USER -->
-        <form method="POST" action="/share_user" style="margin-top:10px;">
-            <input type="hidden" name="file_id" value="{{ file.file_id }}">
-            
-            <input type="text" name="username" placeholder="Enter username" required>
-            
-            <button type="submit">Share</button>
-        </form>
+                <button onclick="copyLink('{{ request.host_url }}share/{{ file.file_id }}')">
+                    🔗 Share
+                </button>
+            </div>
+
+            <!-- Share with user -->
+            <form method="POST" action="/share_user" style="margin-top:10px;">
+                <input type="hidden" name="file_id" value="{{ file.file_id }}">
+                <input type="text" name="username" placeholder="Share with username" required>
+                <button type="submit">👤 Share</button>
+            </form>
+
+        </div>
+        {% endfor %}
 
     </div>
-
-</div>
-{% endfor %}
 
 </div>
 
 <script>
 function copyLink(link) {
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(link);
-    } else {
-        const temp = document.createElement("input");
-        temp.value = link;
-        document.body.appendChild(temp);
-        temp.select();
-        document.execCommand("copy");
-        document.body.removeChild(temp);
-    }
+    const temp = document.createElement("input");
+    temp.value = link;
+    document.body.appendChild(temp);
+    temp.select();
+    document.execCommand("copy");
+    document.body.removeChild(temp);
 
     alert("Link copied:\n" + link);
 }
