@@ -1,22 +1,2 @@
-# Python
-__pycache__/
-*.pyc
-
-# Virtual env
-venv/
-
-# OS files
-.DS_Store
-
-# Database
-*.db
-
-# Environment variables
-.env
-
-# Uploads 
-uploads/
-
-# Temp files
-temp_*
-shared_*
+# Created by venv; see https://docs.python.org/3/library/venv.html
+*
